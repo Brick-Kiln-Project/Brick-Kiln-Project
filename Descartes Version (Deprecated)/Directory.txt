@@ -1,0 +1,46 @@
+Directory
+    deprecated_code -> Home for old uneccesary code, including old test models, datasets and utility functions. Kept for posterity sake.
+    
+    development -> Home for the entire model training pipeline from tiling an entire country to using an existing model to create a prediction dataset.
+        Workflow ->
+            deploy.py -> utils.py create_prefix -> return
+                V     -> tile.py create_country_tiles -> create_general_aoi -> return
+                V     -> tasks.py TaskGroup __init__ -> deploy
+                                                           V   -> model.py load_model_from_checkpoint
+                                                                                       V              -> Resnet -> return
+                                                                                       V              -> load_checkpoint -> return
+                                                           V   -> return
+                                                           V   -> dataloader.py get_tile_dataloader
+                                                                                        V           -> TileDataset __init__ -> return
+                                                           V   -> return
+                V     -> return
+            return
+        Reliant on -> ../constants.py, ../Predicted_Datasets/,  ../UI_Labeling/config.py, Descartes Storage (model weights)
+    
+    dl_dataset_and_model -> Home for creation of image and prediction datasets based on existing labeled country datasets based on their respective models.  Will then be fed into a new model training
+        Workflow -> 
+            generate_dl_dataset.ipynb (times # of datasets needed) -> model_training.ipynb
+        Reliant on -> Image_Datasets/, model_log_dl/, ../UI_Labeling/config.py, Descartes Storage (dataset Confirmed, dataset Denied)
+    
+    GeoJSONS -> Home for geojsons of the countries separated world map and any necessary subdivisions (kiln belt, state/district separations, etc.)
+    
+    Predicted_Datasets -> Home of the predicted datasets resulted from the development directory, the directory within defines what each dataset is and where it comes from.
+    
+    UI_Labeling -> Home of the labeling process, takes an existing predicted dataset and separates it into groups to be handlabeled by users.
+        Workflow -> 
+            Create_State_Dataset.ipynb (optional) -> Grouping.ipynb -> Labeling.ipynb (times # of groups) -> LabelingError.ipynb -> ErrorAnalysis.ipynb
+        Reliant on -> State_Separated_Datasets/, config.py, Descartes Storage (dataset Confirmed, dataset Denied, dataset Groups, dataset Lr, dataset Hr)
+    
+    __init__.py -> For initialization
+    
+    constants.py -> Home of global level constants, importantly weights used for current model evaluation and the satellites used for data acquisition.
+    
+    Coverage.ipynb -> Place to visualize a predicted Datasets coverage, used for additional analysis.
+    
+    dl_setup_instructions.txt -> Setup instructions for descarteslabs virtual machine
+
+Overall workflow
+    Description ->
+        Evaluate an existing/brand-new model on a desired country. Save that resulting csv -> Create a finer dataset based on specifications (country separated etc.), create groups and label the resulting dataset/groups. Save the resulting confirmed/denied lists into descartes Storage -> Save the confirmed/denied results locally and use it to train/re-train the model.  Save the model weights to descartes storage.
+    Directory Workflow ->
+        development -> (On Terminal) deploy.py -> UI_Labeling -> dl_dataset_and_model -> repeat

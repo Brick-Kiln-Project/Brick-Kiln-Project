@@ -1,0 +1,13 @@
+cloud-init
+distro-info===0.23ubuntu1
+Fiona==1.8.20
+kneed==0.8.1
+language-selector==0.1
+PyGObject==3.36.0
+pyproj==3.2.1
+pyshp==2.3.1
+python-apt==2.0.0+ubuntu0.20.4.8
+python-debian===0.1.36ubuntu1
+ubuntu-advantage-tools==27.10
+ufw==0.36
+zope.interface==4.7.1

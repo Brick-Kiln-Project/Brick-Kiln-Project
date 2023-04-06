@@ -1,0 +1,26 @@
+Directory
+    DEPRECATED DATASETS -> Home of old dataset creation functions and datasets
+    
+    Image_Datasets -> Contains folders representing the individual labeled datasets obtained through UI_Labeling, each folder contians negatives/positives folders containing the npy representation of the labeled images nad subsequent presence of a kiln as dictated by the labeling process and a metadata.csv which accounts for each tile and relevant information on it.
+    
+    model_log_dl -> Contains folders which in turn contain the model checkpoints which are then read/saved through the training process
+    
+    generate_dl_dataset.ipynb -> This file iterates through the desired datasetName inside the specified descartesLabs storage and downloads the image to the positive/negative folder and adds it's metadata to the metadata.csv within the specified Image_Datasets/ folder.
+        IMPORTANT VARIABLES ->
+            ../UI_Labeling/config.py -> file containing the relevant information for descarteslabs storage, if not currently existing, create one using the config.py.dist template and fill the relevant variables
+            datasetName -> string referencing the relevant dataset name under which most values are stored under within the descartes labs storage and ../Predicted_Datasets
+            STARTFROM -> int representing the starting batch in case a previous dataset creation terminated early or unexpectedly
+            TIMEOUT -> int representing the maximum time in seconds allowed to obtain a subtile's image. If not defined, the task will run indefinitely, THIS IS NOT RECOMMENDED AS CERTAIN TILES ARE KNOWN TO RUN UPWARDS OF 8 HOURS WITH NO SIGN OF COMPLETION.
+            DATASIZE -> int representing the size of the batches to separate the respective dataset into, increasing this number may cause kernel termination and memory issues
+            PATHNAME -> Directory to create/reference which will contain the images and metadata information.
+        Returns ->
+            A filled folder within Image_Datasets/ containing a metadata.csv and folders filled with .npy iamge files
+            
+    model_training.ipynb -> this file trains a resnet model on the specified datasets created with generate_dl_dataset.ipynb saving weight checkpoints which will be used to evalute other datasets.
+        IMPORTANT VARIABLES ->
+            ../UI_Labeling/config.py -> file containing the relevant information for descarteslabs storage, if not currently existing, create one using the config.py.dist template and fill the relevant variables
+            model_name -> Name which will be used to keep track of this model, name it using an existing or descriptive notation to avoid overwriting
+            WITHIN THE FOURTH CODE CELL -> There is a section with the comment # ADD DATASETS HERE FOR TRAINING within which you can copy and paste the subsequent functions with the respective Image_Datasets/ folder names to add as a training set.
+        Returns ->
+            A filled folder within model_log_dl containing the model checkpoints
+            A weight file to the specified Descartes Labs Storage

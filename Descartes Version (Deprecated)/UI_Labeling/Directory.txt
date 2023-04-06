@@ -1,0 +1,37 @@
+Directory 
+    State_Separated_Datasets -> Folder containing the feature separated datasets which will be used in the labeling process
+    
+    __init__.py -> File containing any initialized globals
+    
+    config.py -> File containing the descartes labs storage identifiers with which to reference their files (IS NOT COPIED OVER FROM GITHUB, MUST BE MADE)
+    
+    config.py.dist -> Template with which to create the config.py file, fill with relevant descarteslabs identifiers
+    
+    Create_State_Dataset.ipynb -> From an existing dataset, sample tiles given conditions based on brick belt and state boundaries
+        IMPORTANT VARIABLES ->
+            datasetName -> predicted Dataset to reference
+            country -> country which to sample etc.
+ 
+    ErrorAnalysis.ipynb -> Do some basic error analysis after labeling, using the labeled data as 'accurate' and the original prediccted data as our flawed dataset
+        IMPORTANT VARIABLES ->
+            datasetName -> Predicted dataset to reference
+            
+    Grouping.ipynb -> Iterate through all of the high and low res images and save them to the descartes labs storage while also extracting their features to pass along to the kmeans algorithm to effectively group the images into 'similar' visual groups.  These are then saved into the storage as their respective batch to be labeled.
+        IMPORTANT VARIABLES ->
+            LOWIMGSHAPE -> Shape of the low res image, used to extract features from an image
+            BATCHSIZE -> Number of images to get per batch, ceiling of this value is dictated by the memory intensivity of loading High res images (640,640,3) at the same time
+            KMEANSSIZE -> Number of maximal kmeans groups to create, set high to test for the most optimal value
+            TIMEOUT -> Maximum time in seconds to allocate to any given image acquisition, ends in failure if time exceeds this value, if not specified will continue indefinitely, THIS IS NOT RECOMMENDED AS SOME TILES ARE KNOWN TO RUN UPWARDS OF 8 HOURS WITH NO SIGN OF TERMINATING FOR UNKNOWN REASONS
+            datasetName -> predicted dataset to reference
+    
+    Labeling.ipynb -> Iterate through the given batch and manually label whether a kiln exists within the image or not.
+        IMPORTANT VARIABLES ->
+            IMGSHOWN -> number of images to show in total per page, limited for viewing purposes
+            NUMIMGROW -> number of images to show per row, limited for viewing purposes
+            datasetName -> predicted dataset to reference
+    
+    LabelingError.ipynb -> Very similar to the Labeling.ipynb and ErrorAnalysis.ipynb files, used to do error analysis by a third person on an existing dataset.
+    
+    
+        
+        

@@ -1,0 +1,32 @@
+Directory
+    Deprecated -> Home of old testing and visualization tools
+    
+    __init__.py -> Home for initialization variables
+    
+    dataloader.py -> Home of satellite image acquisition and subtile subdivision
+    
+    deploy.py -> Main Callable function, calls the other files and their functions to iterate through the subtiles and pass their images to the model to evaluate. Call this from terminal to begin the process, also check https://monitor.descarteslabs.com/ to view the progress of the tasks.
+    
+    model.py -> Recreates the resnet model and loads from the weights in DescartesLabs storage as defined by the ../config.py file
+    
+    tasks.py -> Creates a DescartesLabs TaskGroup to parallelize tile acquisition, division and evaluation from the model.  
+        IMPORTANT VARIABLES -
+            maximum_concurrency -> the max number of parallel workers to work on the tasks. Maximum allowed by descartes is 120 and these workers are shared for any descarteslabs calls (i.e. getting scenes, satellite imagery, map calls etc.) so ensure no other jobs or functions are running concurrently to ensure proper completion of tasks.  Check https://monitor.descarteslabs.com/ for details on current TaskGroups and terminated groups with active workers.
+            retry_count -> if a task fails for whatever reason (timeout, too much memory usage, connection closed by peer etc.) it is retried this number of times before officially closing with a max of 5.  Tasks can take a large amount of time, so beware and if non-zero may cause (non-important) visual errors on the terminal view of deploy.py 
+            task_timeout -> Maximum time allowed per task before failing in seconds. Individual Tasks average at about 20-25 minutes for the later tasks but may go over for various reasons.  If the task_timeout is not defined, it will run indefinitely until completion, THIS IS NOT RECOMMENDED AS SOME TILES HAVE BEEN KNOWN TO RUN UPWARDS OF 8 HOURS WITH NO COMPLETION STATE FOR UNKNOWN REASONS
+    
+    tile.py -> Obtains the shape file of the specified country and creates an aoi from which the country is then tiled from.
+        IMPORTANT VARIABLES -
+            location -> a string variable representing the country to be tiled, check the ../GeoJSONS/countries.geojson for what each country is called and what the shapefile looks like
+    utils.py -> Creates the prefix to name the task group and subsequently the entire dataset, checks the specified descarteslabs storage dictated in ../UI_Labeling/config.py if the prefix has already been used until one hasn't been found, BEWARE IF YOU'RE TRYING TO MAKE MULTIPLE PREDICTION RESULTS WITHOUT FIRST GROUPING
+    
+    ../UI_Labeling/config.py -> file containing the relevant information for descarteslabs storage, if not currently existing, create one using the config.py.dist template and fill the relevant variables
+    
+    ../constants.py -> Contains most of the relevant constant variables, IMPORTANTLY contains the name of the model weights to be retrieved from the decartes labs storage.
+    
+    IMPORTANT VARIABLES AND THEIR LOCATIONS
+        ../constants.py -> DEPLOY_MODEL_WEIGHTS = ""
+        ../UI_Labeling/config.py -> ID=''
+                                    SECRET=''
+        tile.py -> location: str=''
+        

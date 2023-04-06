@@ -1,0 +1,14 @@
+/__pycache__/
+*/deprecated_code/
+*.ipynb_checkpoints*
+*pycache*
+*.zip
+*.swp
+*/Configs/*
+!*/Configs/config_base.py
+!*/Configs/constants.py
+!*/Configs/global_func.py
+!*/Configs/help_texts.py
+!*/Configs/keys_base.py
+*/Data/*
+
