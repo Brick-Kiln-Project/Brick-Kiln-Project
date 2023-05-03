@@ -43,7 +43,7 @@ def load_checkpoint(checkpoint, model, device, optimizer=None):
     return model
 
 
-def load_model_from_checkpoint(path, constants, device="cuda"):
+def load_model_from_checkpoint(path, constants, device='cpu'):
     logdir=constants.MODEL_ROOT+path+'_50_training_steps/checkpoints/best_dl_best.pth'
     model = Resnet(3,constants, device=device)
     model = load_checkpoint(logdir, model, device)

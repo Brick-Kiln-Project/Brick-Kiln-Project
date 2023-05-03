@@ -31,11 +31,11 @@ def evaluate(geometry):
 
 def coordinateFunc(model,image,idx,constants,geom):
     latlons={}
-    upsamplednet = UpsampledResnet(3,64, device='cuda')
+    upsamplednet = UpsampledResnet(3,64, device=constants.CUDA)
     upsamplednet = load_checkpoint(constants.MODEL_ROOT+model+"_50_training_steps/checkpoints/best_dl_best.pth", 
                                      upsamplednet, 
                                      'cpu')
-    upsamplednet.to('cuda')
+    upsamplednet.to(constants.CUDA)
     upsampled_conv_name='layer4'
     upsamplednet.eval()
 
@@ -47,10 +47,10 @@ def coordinateFunc(model,image,idx,constants,geom):
     upsampledparams = list(upsamplednet.parameters())
     upsampled_weight_softmax = [np.dot(np.squeeze(upsampledparams[-2].data.cpu().numpy()),(np.squeeze(upsampledparams[-4].data.cpu().numpy())))]
     
-    upsampledimg=image.float().to('cuda')
+    upsampledimg=image.float().to(constants.CUDA)
     """
     upsampledimg=np.transpose(upsampledimg,(2,0,1))
-    upsampledimg=torch.Tensor(upsampledimg).to('cuda')
+    upsampledimg=torch.Tensor(upsampledimg).to(constants.CUDA)
     """
     upsampledlogit=upsamplednet(Variable(upsampledimg))
     upsampledh_x=F.softmax(upsampledlogit,dim=1).data.squeeze()
@@ -82,7 +82,7 @@ def startthread(geometries,country,prefix,model_path,constants,coordfile):
     numbered_geometries=list(enumerate(geometries))
     with torch.no_grad():
         #Initialize upsampling and standard model
-        model=load_model_from_checkpoint(model_path,constants)
+        model=load_model_from_checkpoint(model_path,constants,constants.CUDA)
         model.eval()
         sr=LoadUpsamplingModel(constants)
         buff=[ constants.GEE_SATELLITE,constants.GEE_START_DATE,constants.GEE_END_DATE,constants.GEE_FILTERS,constants.GEE_FILTERS_BOUNDS,constants.GEE_MAX_PIXEL_VALUE,constants.GEE_IMAGE_FORMAT,constants.GEE_IMAGE_SHAPE]
@@ -104,7 +104,7 @@ def startthread(geometries,country,prefix,model_path,constants,coordfile):
                             subtile_geo=pkl.loads(subtile_geometry)
                             result=sr.upsample(img.numpy().squeeze())
                             img=torch.Tensor(np.expand_dims(np.transpose(result,(2,0,1)),axis=0))
-                            prediction=model(img.float().to('cuda')).to('cuda')
+                            prediction=model(img.float().to(constants.CUDA)).to(constants.CUDA)
                             prediction=prediction.item()
                             results_list.append([int(idx[0]),subtile_geo,str(prediction)])
                             

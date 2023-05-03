@@ -245,7 +245,7 @@ def main(dataset_list,model_name,constants,transform_list=None):
     train_loader = DataLoader(train_dset, batch_size=64,shuffle=True)
     val_loader = DataLoader(val_dset, batch_size=64,shuffle=True)
     
-    model = Resnet(3, device='cuda')
+    model = Resnet(3, device=constants.CUDA)
     lr = 1e-4
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = nn.BCELoss()
