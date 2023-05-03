@@ -123,13 +123,12 @@ def gethrimage(subtileGeometries):
         )
         
         temp=b''.join(list(response))
-        print(temp)
         with Image.open(BytesIO(temp)) as im:
             image=np.array(im.convert('RGB'))
         return [idx,lowImg,image,geometry,center]
 
     except Exception as e:
-        print(e)
+        print("GMAPS EXCEPTION")
         return None
 
 

@@ -54,13 +54,13 @@ def GEELoadImage(image,geometry,constants,rgb_only=True):
     
     #Catch all relevant exceptions and print relevant error text 
     except ee.EEException as e:
-        print("Earth Engine Failure",e)
+        print("Earth Engine Failure")
         return None
     except UnidentifiedImageError as p:
-        print("Bad GEE Image Response",response.content)
+        print("Bad GEE Image Response")
         return None
     except Exception as e:
-        print('Unknown Exception',e)
+        print('Unknown Exception')
         return None
 
     return img

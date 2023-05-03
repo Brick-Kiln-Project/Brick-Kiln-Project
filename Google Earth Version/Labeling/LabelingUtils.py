@@ -132,11 +132,11 @@ def loadGroup(imageDict,hrImgDict,groups,m,userNameValue,confirmed,denied,edit,a
             with output:
                 fig = plt.figure(figsize=(6,6))
                 hr=plt.imshow(hrImgDict[key][0])
-                plt.show(fig)
+                plt.show(fig);
             with output2:
                 fig2=plt.figure(figsize=(6,6))
                 lr=plt.imshow(imageDict[key][0])
-                plt.show(fig2)
+                plt.show(fig2);
             
             #Consolidate and order the Images and Buttons into a VBox and increase the limit
             rowImg.append(VBox([
