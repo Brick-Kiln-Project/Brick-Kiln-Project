@@ -143,11 +143,11 @@ def returnOriginalCAM(feature_conv, weight_softmax, class_idx):
 def main(dataset,postfix,model,constants):
     df = pd.read_csv(constants.IMAGE_DATASETS_ROOT+dataset+"/metadata.csv")
     
-    upsamplednet = UpsampledResnet(3,64, device='cuda')
+    upsamplednet = UpsampledResnet(3,64, device=constants.CUDA)
     upsamplednet = load_checkpoint(constants.MODEL_ROOT+model+"_50_training_steps/checkpoints/best_dl_best.pth", 
                                      upsamplednet, 
-                                     'cpu')
-    upsamplednet.to('cuda')
+                                     constants.CUDA)
+    upsamplednet.to(constants.CUDA)
     upsampled_conv_name='layer4'
     upsamplednet.eval()
 
@@ -167,7 +167,7 @@ def main(dataset,postfix,model,constants):
                 image=df['Image'][idx]
                 upsampledimg=np.load(constants.IMAGE_DATASETS_ROOT+dataset+'/'+image)
                 upsampledimg=np.transpose(upsampledimg,(2,0,1))
-                upsampledimg=torch.Tensor(upsampledimg).to('cuda')
+                upsampledimg=torch.Tensor(upsampledimg).to(constants.CUDA)
                 upsampledlogit=upsamplednet(Variable(upsampledimg.unsqueeze(0)))
                 upsampledh_x=F.softmax(upsampledlogit,dim=1).data.squeeze()
                 upsampledprobs,upsampledidx=upsampledh_x.sort(0,True)

@@ -81,7 +81,7 @@ GEE_FILTERS_BOUNDS = [
 GEE_SORT_CATEGORY = 'HIGH_PROBA_CLOUDS_PERCENTAGE' #Desired Sort category
 GEE_START_DATE = '2020-09-01' #Determines lower bound of satellite imagery
 GEE_END_DATE = '2021-09-01' #Determines upper bound of satellite imagery
-
+CUDA='cuda'
 
 ###PATHS
 ABSOLUTE_ROOT=pathlib.Path(__file__).resolve().parents[1].as_posix()
