@@ -9,9 +9,14 @@ from io import BytesIO
 import numpy as np
 from cv2 import dnn_superres
 import torch
+import sys
 
+sys.path.append("../Configs/")
+import keys
 import ee
-ee.Initialize()
+service_account=keys.googleEarthAccount
+credentials = ee.ServiceAccountCredentials(service_account,'../Configs/brick-kiln-project-d44b06c94881.json')
+ee.Initialize(credentials)
 
 def GEELoadImage(image,geometry,constants,rgb_only=True):
     #Initialize 3 or 10 band list

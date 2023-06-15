@@ -6,7 +6,9 @@ torch
 chardet
 earthengine-api
 keras
-tensorflow
+tensorflow; sys_platform=='linux'
+tensorflow-macos; sys_platform=='darwin'
+tensorflow-metal; sys_platform=='darwin'
 scikit-learn
 kneed
 tqdm

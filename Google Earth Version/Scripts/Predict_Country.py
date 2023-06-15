@@ -18,6 +18,7 @@ from multthread import startthread
 sys.path.append("../Configs/")
 #import constants
 import help_texts
+import keys
 
 #Necessary Libraries
 import pathlib
@@ -27,7 +28,9 @@ import csv
 import ee
 import numpy as np
 #Initialize ee
-ee.Initialize()
+service_account=keys.googleEarthAccount
+credentials = ee.ServiceAccountCredentials(service_account,'../Configs/brick-kiln-project-d44b06c94881.json')
+ee.Initialize(credentials)
 
             
 def deploy_over_country(country,model,constants,coordfile):
@@ -118,7 +121,7 @@ def initiate():
         elif args[0].lower() in ['-full','-f']:
             cont=True
             while(cont):
-                inp=input('Running full suite using variables in constant.py, confirm? [y,n]')
+                inp=input('Running full suite using variables in '+module_name+', confirm? [y,n]')
                 if inp=='y':
                     cont=False
                 elif inp=='n':
@@ -138,7 +141,7 @@ def initiate():
             if not Sample_Predictions.verify_prefix(constants.SAMPLING_DATASET_PREFIX):
                 return
             
-            prefix=main(constants.DEPLOY_COUNTRY,constants.DEPLOY_MODEL_WEIGHTS,constants)
+            prefix=main(constants.DEPLOY_COUNTRY,constants.DEPLOY_MODEL_WEIGHTS,constants,False)
             print('Finished Predicting')
             
             if not Sample_Predictions.verify_dataset(prefix,constants.SAMPLING_DATASET_PREFIX,constants):

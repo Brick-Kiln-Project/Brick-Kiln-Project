@@ -14,13 +14,18 @@ from time import sleep
 import json
 from torch.autograd import Variable
 from torch.nn import functional as F
-
+import matplotlib.image
 import sys
 sys.path.append("../Configs/")
 #import constants
 from global_func import LoadUpsamplingModel
+import keys
 sys.path.append("../Scripts/")
 from Get_Coordinates import returnCAM, UpsampledResnet, load_checkpoint
+import ee
+service_account=keys.googleEarthAccount
+credentials = ee.ServiceAccountCredentials(service_account,'../Configs/brick-kiln-project-d44b06c94881.json')
+ee.Initialize(credentials)
 
 def evaluate(geometry):
     #Create Dataloader from tile_geometry
@@ -56,19 +61,39 @@ def coordinateFunc(model,image,idx,constants,geom):
     upsampledh_x=F.softmax(upsampledlogit,dim=1).data.squeeze()
     upsampledprobs,upsampledidx=upsampledh_x.sort(0,True)
     upsampledidx=upsampledidx.cpu().numpy()
-    upsampledCAMs,upsampledlabeled,upsamplednr_objects,upsampledcenters=returnCAM(upsampled_features_blobs[-1],[upsampled_weight_softmax[-1]*-1],[upsampledidx],9,upsampledimg.shape[1])
-    temp=[]
-    for centers in upsampledcenters[0]:
+    upsampledCAMs,upsampledlabeled,upsamplednr_objects,upsampledcenters,upsampledcontours=returnCAM(upsampled_features_blobs[-1],[upsampled_weight_softmax[-1]*-1],[upsampledidx],9,upsampledimg.shape[-1])
+    temped={}
+    temp={}
+    eeCases=[]
+    points=[]
+    for z,centers in enumerate(upsampledcenters[0]):
         x1=geom['geometry']['coordinates'][0][0][0]
         y1=geom['geometry']['coordinates'][0][0][1]
-        x2=geom['geometry']['coordinates'][0][3][0]
-        y2=geom['geometry']['coordinates'][0][3][1]
+        x2=geom['geometry']['coordinates'][0][2][0]
+        y2=geom['geometry']['coordinates'][0][2][1]
         xstep=abs(x1-x2)/256*centers[1]
         ystep=abs(y1-y2)/256*centers[0]
-        lat=round(ystep+min(y1,y2))
+        lat=round(max(y1,y2)-ystep)
         lon=round(xstep+min(x1,x2))
-        temp.append((lat,lon))
-
+        
+        casetemp=[]
+        for case in upsampledcontours[z]:
+            xstep=abs(x2-x1)/256*case[0][0]
+            ystep=abs(y2-y1)/256*case[0][1]
+            lats=round(max(y1,y2)-ystep)
+            lons=round(xstep+min(x1,x2))
+            casetemp.append([lons,lats])
+        casetemp.append(casetemp[0])
+        if (len(casetemp) > 4):
+            eeCase=ee.Geometry.Polygon(
+                coords=casetemp,
+                proj='EPSG:3857'
+            )
+            eeCase=eeCase.transform('EPSG:4326').getInfo()
+            eeCases.append(eeCase)
+            points.append((lat,lon))
+    temp['shape']=eeCases
+    temp['center']=points
 
     latlons[str(idx[0])]=temp
     upsampled_features_blobs=[]
@@ -77,7 +102,7 @@ def coordinateFunc(model,image,idx,constants,geom):
 def startthread(geometries,country,prefix,model_path,constants,coordfile):
     if coordfile:
         with open (constants.COORDINATES_ROOT+coordfile+'.json','w') as outfile:
-            json.dump({},outfile)
+            json.dump({'type':'center&shape','data':{}},outfile)
         
     numbered_geometries=list(enumerate(geometries))
     with torch.no_grad():
@@ -107,15 +132,15 @@ def startthread(geometries,country,prefix,model_path,constants,coordfile):
                             prediction=model(img.float().to(constants.CUDA)).to(constants.CUDA)
                             prediction=prediction.item()
                             results_list.append([int(idx[0]),subtile_geo,str(prediction)])
-                            
+                            import random
                             if coordfile and (prediction > .9):
                                 latlons.update(coordinateFunc(model_path,img,idx,constants,subtile_geo))
                     if coordfile:
                         temp = {}
                         with open (constants.COORDINATES_ROOT+coordfile+'.json','r+') as outfile:
                             temp=json.load(outfile)
-                            temp.update(latlons),outfile
-                        with open (constants.COORDINATES_ROOT+coordfile+'.json','w+') as outfile:
+                            temp['data'].update(latlons),outfile
+                        with open (constants.COORDINATES_ROOT+coordfile+'.json','w') as outfile:
                             json.dump(temp,outfile)
                         
                     with open(constants.PREDICTION_ROOT+prefix+'_results.csv', 'a', newline='') as file:
