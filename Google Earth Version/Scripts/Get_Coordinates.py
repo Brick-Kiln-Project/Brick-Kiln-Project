@@ -5,8 +5,10 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 #Import Files
 import sys
 
+import matplotlib.image
 sys.path.append("../Configs/")
 import help_texts
+import keys
 """
 import constants
 """
@@ -24,7 +26,10 @@ from torch.autograd import Variable
 from torch.nn import functional as F
 from scipy import ndimage
 from torchvision.models import resnet18
-
+import ee 
+service_account=keys.googleEarthAccount
+credentials = ee.ServiceAccountCredentials(service_account,'../Configs/brick-kiln-project-d44b06c94881.json')
+ee.Initialize(credentials)
 
 class UpsampledResnet(nn.Module):
     def __init__(self, num_channels, image_width, device=None, pretrained=False):
@@ -65,15 +70,20 @@ def load_checkpoint(model_checkpoint, model, device, optimizer=None):
 
 def returnCAM(feature_conv, weight_softmax, class_idx, kernel, size_upsample):
     # generate the class activation maps upsample to 256x256
+    #print(feature_conv.shape)
     bz, nc, h, w = feature_conv.shape
     output_cam = []
     labeled=[]
     nr_objects=[]
     centers=[]
+    contours=[]
     for idx in class_idx:
         cam = weight_softmax[idx].dot(feature_conv.reshape((nc, h*w)))
         cam = cam.reshape(h, w)
-        cam = np.transpose(cam)
+        #cam = np.transpose(cam)
+
+        #matplotlib.image.imsave('og img.png',cam)
+        
         #normalize
         cam = cam - np.min(cam)
         cam = cam / np.max(cam)
@@ -107,38 +117,31 @@ def returnCAM(feature_conv, weight_softmax, class_idx, kernel, size_upsample):
         mean = np.mean(cam[np.nonzero(cam)])
         cam = cam-mean
         #"""
-        
+        #matplotlib.image.imsave('pre-resize.png',cam)
         cam=cv2.resize(cam, (size_upsample,size_upsample))
         cam_img = np.clip(cam,0,None)
         cam_img = cam_img-(np.max(cam)*.75)
         cam_img=np.clip(cam,0,None)
         cam_img = np.uint8(255 * cam_img)
         output_cam.append(cam_img)
+        #matplotlib.image.imsave('filtered img.png',cam_img)
+        
         labeled1,nr_objects1=ndimage.label(output_cam)
+        #matplotlib.image.imsave('blobs.png', np.squeeze(labeled1))
+        
         labeled.append(labeled1)
         nr_objects.append(nr_objects1)
         centers1=ndimage.center_of_mass(output_cam[-1].squeeze(),labeled[-1].squeeze(),range(1,nr_objects1+1))
         centers.append(centers1)
-    return output_cam,labeled,nr_objects,centers
+        contour,_=cv2.findContours(output_cam[-1],cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        contours.append(contour)
+        if len(centers[-1]) != len(contours[-1]):
+            centers=[[]]
+            contours=[[]]
+    #print(centers,contours[0])
+    
+    return output_cam,labeled,nr_objects,centers,contours[0]
 
-def returnOriginalCAM(feature_conv, weight_softmax, class_idx):
-    # generate the class activation maps upsample to 256x256
-    bz, nc, h, w = feature_conv.shape
-    output_cam = []
-    for idx in class_idx:
-        cam = weight_softmax[idx].dot(feature_conv.reshape((nc, h*w)))
-        cam = cam.reshape(h, w)
-        cam=np.transpose(cam)
-        
-        #normalize
-        cam = cam - np.min(cam)
-        cam = cam / np.max(cam)
-        
-        cam_img = np.clip(cam,0,None)
-        cam_img = np.uint8(255 * cam_img)
-        output_cam.append(cam_img)
-        
-    return output_cam
 
 def main(dataset,postfix,model,constants):
     df = pd.read_csv(constants.IMAGE_DATASETS_ROOT+dataset+"/metadata.csv")
@@ -166,6 +169,8 @@ def main(dataset,postfix,model,constants):
                 geom=eval(df['Geometry'][idx])
                 image=df['Image'][idx]
                 upsampledimg=np.load(constants.IMAGE_DATASETS_ROOT+dataset+'/'+image)
+                #print(df['Key'][idx])
+                #matplotlib.image.imsave('og.png',upsampledimg)
                 upsampledimg=np.transpose(upsampledimg,(2,0,1))
                 upsampledimg=torch.Tensor(upsampledimg).to(constants.CUDA)
                 upsampledlogit=upsamplednet(Variable(upsampledimg.unsqueeze(0)))
@@ -173,20 +178,42 @@ def main(dataset,postfix,model,constants):
                 upsampledprobs,upsampledidx=upsampledh_x.sort(0,True)
                 upsampledprobs=upsampledprobs.cpu().numpy()
                 upsampledidx=upsampledidx.cpu().numpy()
-                upsampledCAMs,upsampledlabeled,upsamplednr_objects,upsampledcenters=returnCAM(upsampled_features_blobs[-1],[upsampled_weight_softmax[-1]*-1],[upsampledidx],9,upsampledimg.shape[1])
-                upsampledoCAMs = returnOriginalCAM(upsampled_features_blobs[-1],[upsampled_weight_softmax[-1]*-1],[upsampledidx])
-                temp=[]
-                for centers in upsampledcenters[0]:
+                upsampledCAMs,upsampledlabeled,upsamplednr_objects,upsampledcenters,upsampledcontours=returnCAM(upsampled_features_blobs[-1],[upsampled_weight_softmax[-1]*-1],[upsampledidx],9,upsampledimg.shape[1])
+                temped={}
+                temp={}
+                eeCases=[]
+                points=[]
+                for z,centers in enumerate(upsampledcenters[0]):
+                    #print(geom['geometry']['coordinates'])
                     x1=geom['geometry']['coordinates'][0][0][0]
                     y1=geom['geometry']['coordinates'][0][0][1]
-                    x2=geom['geometry']['coordinates'][0][3][0]
-                    y2=geom['geometry']['coordinates'][0][3][1]
+                    x2=geom['geometry']['coordinates'][0][2][0]
+                    y2=geom['geometry']['coordinates'][0][2][1]
+                    #print(centers)
                     xstep=abs(x1-x2)/256*centers[1]
                     ystep=abs(y1-y2)/256*centers[0]
-                    lat=round(ystep+min(y1,y2))
+                    lat=round(max(y1,y2)-ystep)
                     lon=round(xstep+min(x1,x2))
-                    temp.append((lat,lon))
-
+                    casetemp=[]
+                    #print(z,centers,upsampledcontours)
+                    for case in upsampledcontours[z]:
+                        xstep=abs(x2-x1)/256*case[0][0]
+                        ystep=abs(y2-y1)/256*case[0][1]
+                        lats=round(max(y1,y2)-ystep)
+                        lons=round(xstep+min(x1,x2))
+                        casetemp.append([lons,lats])
+                    casetemp.append(casetemp[0])
+                    if (len(casetemp) > 4):
+                        eeCase=ee.Geometry.Polygon(
+                            coords=casetemp,
+                            proj='EPSG:3857'
+                        )
+                        eeCase=eeCase.transform('EPSG:4326').getInfo()
+                        eeCases.append(eeCase)
+                        points.append((lat,lon))
+                temp['shape']=eeCases
+                temp['center']=points
+                    
 
                 latlons[str(df['Key'][idx])]=temp
                 upsampled_features_blobs=[]
@@ -195,7 +222,7 @@ def main(dataset,postfix,model,constants):
             pbar.update()
 
         with open (constants.COORDINATES_ROOT+dataset+postfix+'.json','w') as outfile:
-            json.dump(latlons,outfile)
+            json.dump({'type':'center&shape','data':latlons},outfile)
             
 def verify_folder(path,constants):
     if not os.path.exists(path):

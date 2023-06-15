@@ -4,13 +4,17 @@ Used to access shapefiles and tile over them.
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import sys
-"""
 sys.path.append("../Configs/")
+"""
 import constants
 """
+import keys
 import ee
 from math import ceil
-ee.Initialize()
+
+service_account=keys.googleEarthAccount
+credentials = ee.ServiceAccountCredentials(service_account,'../Configs/brick-kiln-project-d44b06c94881.json')
+ee.Initialize(credentials)
 
 def create_geometry_collection(location: str, geometry_collection: str):
     """
@@ -46,6 +50,6 @@ def create_country_tiles(constants,location: str, geometry_collection: str):
     for x in range(ceil(tgeo.size().getInfo()/5000)):
         tgeoBatch=tgeo.toList(5000,5000*x).getInfo()
         tgeoList.extend(tgeoBatch)
-    
+        
     tile_geometries = tgeoList[constants.DEPLOY_START_FROM:]
     return tile_geometries,country

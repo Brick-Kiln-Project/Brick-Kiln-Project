@@ -16,12 +16,15 @@ sys.path.append("../Configs/")
 import constants
 """
 import help_texts
+import keys
 
 from global_func import LoadUpsamplingModel
 from multiprocessing.pool import ThreadPool
 from tqdm import tqdm
 import ee
-ee.Initialize()
+service_account=keys.googleEarthAccount
+credentials = ee.ServiceAccountCredentials(service_account,'../Configs/brick-kiln-project-d44b06c94881.json')
+ee.Initialize(credentials)
 import torch
 import itertools
 

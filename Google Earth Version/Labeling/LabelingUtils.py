@@ -13,7 +13,9 @@ import time
 import folium
 
 import ee
-ee.Initialize()
+service_account='brick-kiln-admin@brick-kiln-project.iam.gserviceaccount.com'
+credentials = ee.ServiceAccountCredentials(service_account,'../Configs/brick-kiln-project-d44b06c94881.json')
+ee.Initialize(credentials)
 
 import sys
 """

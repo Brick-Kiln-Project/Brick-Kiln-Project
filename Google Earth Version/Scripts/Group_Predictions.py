@@ -6,6 +6,7 @@ import sys
 
 sys.path.append("../Configs/")
 from keys import googleMapsKey
+import keys
 import help_texts
 from global_func import GEELoadImage, masks2clouds
 
@@ -39,7 +40,9 @@ import torch
 
 #Import API's and Initialize them
 import ee
-ee.Initialize()
+service_account=keys.googleEarthAccount
+credentials = ee.ServiceAccountCredentials(service_account,'../Configs/brick-kiln-project-d44b06c94881.json')
+ee.Initialize(credentials)
 import googlemaps
 
 
@@ -202,14 +205,14 @@ def InitiateModel(subtileGeometries,batch,root,constants):
     #Optimize Kmeans grouping by running it over a range of groups and run a final time on the most optimal
     print("Optimizing clusters")
     for y in range(1,constants.KMEANS_SIZE):
-        kmeans=KMeans(n_clusters=y)
+        kmeans=KMeans(n_clusters=y,n_init=10)
         kmeans.fit(x)
         inertia.append(kmeans.inertia_)
             
     kl = KneeLocator(range(1,constants.KMEANS_SIZE), inertia,direction='decreasing', curve="convex")
     inertia.clear()
     
-    kmeans=KMeans(n_clusters=kl.knee)
+    kmeans=KMeans(n_clusters=kl.knee,n_init=10)
     kmeans.fit(x)
     
     #Create Cluster Groups from KMeans results

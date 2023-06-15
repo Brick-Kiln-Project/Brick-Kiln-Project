@@ -2,16 +2,19 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from torch.utils.data import Dataset, DataLoader
 from torch import Tensor
-
-import pickle as pkl
-import ee
-ee.Initialize()
-from time import sleep
 import sys
-from math import floor
 sys.path.append("../Configs/")
 #import constants
 from global_func import GEELoadImage, masks2clouds
+import keys
+
+import pickle as pkl
+import ee
+service_account=keys.googleEarthAccount
+credentials = ee.ServiceAccountCredentials(service_account,'../Configs/brick-kiln-project-d44b06c94881.json')
+ee.Initialize(credentials)
+from time import sleep
+from math import floor
 
 class TileDataset(Dataset):
     
@@ -40,7 +43,7 @@ class TileDataset(Dataset):
             for y in range(4):
                 batch_subtiles.extend(list(range(((128*startby)+(32*y))+(4*startbx),((128*startby)+(32*y))+(4*(startbx+1)))))
                 
-            try: 
+            try:
                 lowRes_collection=lowres_collection.filterBounds(ee.Geometry(batch['geometry']))
                 image=lowRes_collection.mean()
                 buff=[GEE_MAX_PIXEL_VALUE,GEE_IMAGE_FORMAT,GEE_IMAGE_SHAPE*4]
